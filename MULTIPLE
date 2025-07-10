@@ -1,0 +1,75 @@
+// app/page.tsx
+const appPage = `
+const supabase = createServerComponentClient({
+  cookies,
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+})
+`;
+
+// app/worker/page.tsx
+const appWorkerPage = `
+const supabase = createServerComponentClient({
+  cookies,
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+})
+`;
+
+// app/warehouse/page.tsx
+const appWarehousePage = `
+const supabase = createServerComponentClient({
+  cookies,
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+})
+`;
+
+// app/hr/page.tsx
+const appHrPage = `
+const supabase = createServerComponentClient({
+  cookies,
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+})
+`;
+
+// components/login-form.tsx
+const componentsLoginForm = `
+const supabase = createClientComponentClient({
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+})
+`;
+
+// components/worker-dashboard.tsx
+const componentsWorkerDashboard = `
+const supabase = createClientComponentClient({
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+})
+`;
+
+// components/warehouse-dashboard.tsx
+const componentsWarehouseDashboard = `
+const supabase = createClientComponentClient({
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+})
+`;
+
+// components/hr-dashboard.tsx
+const componentsHrDashboard = `
+const supabase = createClientComponentClient({
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+})
+`;
+
+// lib/supabase.ts
+const libSupabase = `
+export const supabase = createClientComponentClient({
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+})
+`;

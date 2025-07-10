@@ -1,0 +1,258 @@
+\`\`\`typescript
+// app/page.tsx
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
+
+export default async function Page() {
+  const cookieStore = cookies()
+  const supabase = createServerComponentClient({
+    cookies: cookieStore,
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  })
+
+  const { data: quotes } = await supabase.from('quotes').select('*')
+
+  return (
+    <div>
+      <h1>Quotes</h1>
+      {quotes?.map((quote) => (
+        <div key={quote.id}>
+          <p>{quote.text}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+\`\`\`
+
+\`\`\`typescript
+// app/worker/page.tsx
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
+
+export default async function WorkerPage() {
+  const cookieStore = cookies()
+  const supabase = createServerComponentClient({
+    cookies: cookieStore,
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  })
+
+  const { data: tasks } = await supabase.from('tasks').select('*')
+
+  return (
+    <div>
+      <h1>Worker Tasks</h1>
+      {tasks?.map((task) => (
+        <div key={task.id}>
+          <p>{task.description}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+\`\`\`
+
+\`\`\`typescript
+// app/warehouse/page.tsx
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
+
+export default async function WarehousePage() {
+  const cookieStore = cookies()
+  const supabase = createServerComponentClient({
+    cookies: cookieStore,
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  })
+
+  const { data: inventory } = await supabase.from('inventory').select('*')
+
+  return (
+    <div>
+      <h1>Warehouse Inventory</h1>
+      {inventory?.map((item) => (
+        <div key={item.id}>
+          <p>{item.name}: {item.quantity}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+\`\`\`
+
+\`\`\`typescript
+// app/hr/page.tsx
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
+
+export default async function HRPage() {
+  const cookieStore = cookies()
+  const supabase = createServerComponentClient({
+    cookies: cookieStore,
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  })
+
+  const { data: employees } = await supabase.from('employees').select('*')
+
+  return (
+    <div>
+      <h1>Employees</h1>
+      {employees?.map((employee) => (
+        <div key={employee.id}>
+          <p>{employee.name}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+\`\`\`
+
+\`\`\`typescript
+// components/login-form.tsx
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useState } from 'react'
+
+export default function LoginForm() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const supabase = createClientComponentClient({
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  })
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      console.error('Error signing in:', error)
+    } else {
+      console.log('Signed in successfully!')
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <label>
+        Email:
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      </label>
+      <br />
+      <label>
+        Password:
+        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+      </label>
+      <br />
+      <button type="submit">Login</button>
+    </form>
+  )
+}
+\`\`\`
+
+\`\`\`typescript
+// components/worker-dashboard.tsx
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useEffect, useState } from 'react'
+
+export default function WorkerDashboard() {
+  const [tasks, setTasks] = useState([])
+  const supabase = createClientComponentClient({
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  })
+
+  useEffect(() => {
+    async function fetchTasks() {
+      const { data } = await supabase.from('tasks').select('*')
+      setTasks(data || [])
+    }
+
+    fetchTasks()
+  }, [supabase])
+
+  return (
+    <div>
+      <h1>Worker Dashboard</h1>
+      <ul>
+        {tasks.map((task) => (
+          <li key={task.id}>{task.description}</li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+\`\`\`
+
+\`\`\`typescript
+// components/warehouse-dashboard.tsx
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useEffect, useState } from 'react'
+
+export default function WarehouseDashboard() {
+  const [inventory, setInventory] = useState([])
+  const supabase = createClientComponentClient({
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  })
+
+  useEffect(() => {
+    async function fetchInventory() {
+      const { data } = await supabase.from('inventory').select('*')
+      setInventory(data || [])
+    }
+
+    fetchInventory()
+  }, [supabase])
+
+  return (
+    <div>
+      <h1>Warehouse Dashboard</h1>
+      <ul>
+        {inventory.map((item) => (
+          <li key={item.id}>{item.name}: {item.quantity}</li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+\`\`\`
+
+\`\`\`typescript
+// components/hr-dashboard.tsx
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useEffect, useState } from 'react'
+
+export default function HRDashboard() {
+  const [employees, setEmployees] = useState([])
+  const supabase = createClientComponentClient({
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  })
+
+  useEffect(() => {
+    async function fetchEmployees() {
+      const { data } = await supabase.from('employees').select('*')
+      setEmployees(data || [])
+    }
+
+    fetchEmployees()
+  }, [supabase])
+
+  return (
+    <div>
+      <h1>HR Dashboard</h1>
+      <ul>
+        {employees.map((employee) => (
+          <li key={employee.id}>{employee.name}</li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+\`\`\`
