@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -37,9 +37,10 @@ import { getCurrentUser, logout, saveExpiringItem, type User } from "@/lib/enhan
 import { cleanupOldData, shouldRunCleanup } from "@/lib/data-cleanup"
 import { createBackup, shouldCreateBackup } from "@/lib/backup-system"
 import { audioNotifications } from "@/lib/audio-notifications"
-import { exportRequestsToPDF } from "@/lib/pdf-export"
+import { exportRequestsToPDF, exportRequestsToCSV } from "@/lib/pdf-export"
 import CommunicationPanel from "./communication-panel"
 import { SimpleBarChart, SimplePieChart, ActivityChart } from "./charts"
+import { addRequestNotification, addActivityNotification } from "@/lib/communication"
 
 interface Request {
   id: string
@@ -51,7 +52,7 @@ interface Request {
   status: string
   created_at: string
   response_notes: string
-  user_department: string
+  user_name: string
 }
 
 interface ExpiringItem {
@@ -60,7 +61,6 @@ interface ExpiringItem {
   expiry_date: string
   location: string
   notes: string
-  department: string
 }
 
 interface WorkerStats {
@@ -111,8 +111,8 @@ export default function EnhancedWorkerDashboard() {
       return
     }
     setUser(currentUser)
-    loadRequests(currentUser.department)
-    calculateWorkerStats(currentUser.department)
+    loadRequests(currentUser.username)
+    calculateWorkerStats(currentUser.username)
 
     // تشغيل التنظيف التلقائي إذا لزم الأمر
     if (shouldRunCleanup()) {
@@ -125,15 +125,24 @@ export default function EnhancedWorkerDashboard() {
     }
   }, [router])
 
-  const loadRequests = (department: string) => {
-    const savedRequests = localStorage.getItem(`requests_${department}`)
+  const loadRequests = (username: string) => {
+    const savedRequests = localStorage.getItem(`requests_${username}`)
     if (savedRequests) {
       setRequests(JSON.parse(savedRequests))
+    } else {
+      // إذا لم تكن هناك طلبات محفوظة للمستخدم، ابحث في all_requests
+      const allRequests = JSON.parse(localStorage.getItem("all_requests") || "[]")
+      const userRequests = allRequests.filter((req: Request) => req.user_name === username)
+      setRequests(userRequests)
+      // حفظ الطلبات للمستخدم
+      if (userRequests.length > 0) {
+        localStorage.setItem(`requests_${username}`, JSON.stringify(userRequests))
+      }
     }
   }
 
-  const calculateWorkerStats = (department: string) => {
-    const userRequests = JSON.parse(localStorage.getItem(`requests_${department}`) || "[]")
+  const calculateWorkerStats = (username: string) => {
+    const userRequests = JSON.parse(localStorage.getItem(`requests_${username}`) || "[]")
     const total = userRequests.length
     const approved = userRequests.filter((r: Request) => r.status === "approved" || r.status === "delivered").length
     const pending = userRequests.filter((r: Request) => r.status === "pending").length
@@ -166,16 +175,19 @@ export default function EnhancedWorkerDashboard() {
 
   const saveRequest = (newRequest: Request) => {
     const allRequests = JSON.parse(localStorage.getItem("all_requests") || "[]")
-    const userRequests = JSON.parse(localStorage.getItem(`requests_${user?.department}`) || "[]")
+    const userRequests = JSON.parse(localStorage.getItem(`requests_${user?.username}`) || "[]")
 
     allRequests.push(newRequest)
     userRequests.push(newRequest)
 
     localStorage.setItem("all_requests", JSON.stringify(allRequests))
-    localStorage.setItem(`requests_${user?.department}`, JSON.stringify(userRequests))
+    localStorage.setItem(`requests_${user?.username}`, JSON.stringify(userRequests))
+
+    console.log('تم حفظ الطلب في all_requests:', allRequests.length)
+    console.log('تم حفظ الطلب في user_requests:', userRequests.length)
 
     setRequests(userRequests)
-    calculateWorkerStats(user?.department || "")
+    calculateWorkerStats(user?.username || "")
 
     // تشغيل صوت النجاح
     audioNotifications.playSuccessSound()
@@ -183,7 +195,7 @@ export default function EnhancedWorkerDashboard() {
 
   const updateRequest = (updatedRequest: Request) => {
     const allRequests = JSON.parse(localStorage.getItem("all_requests") || "[]")
-    const userRequests = JSON.parse(localStorage.getItem(`requests_${user?.department}`) || "[]")
+    const userRequests = JSON.parse(localStorage.getItem(`requests_${user?.username}`) || "[]")
 
     const updatedAllRequests = allRequests.map((req: Request) => (req.id === updatedRequest.id ? updatedRequest : req))
     const updatedUserRequests = userRequests.map((req: Request) =>
@@ -191,62 +203,65 @@ export default function EnhancedWorkerDashboard() {
     )
 
     localStorage.setItem("all_requests", JSON.stringify(updatedAllRequests))
-    localStorage.setItem(`requests_${user?.department}`, JSON.stringify(updatedUserRequests))
+    localStorage.setItem(`requests_${user?.username}`, JSON.stringify(updatedUserRequests))
 
     setRequests(updatedUserRequests)
-    calculateWorkerStats(user?.department || "")
+    calculateWorkerStats(user?.username || "")
   }
 
   const deleteRequest = (requestId: string) => {
     const allRequests = JSON.parse(localStorage.getItem("all_requests") || "[]")
-    const userRequests = JSON.parse(localStorage.getItem(`requests_${user?.department}`) || "[]")
+    const userRequests = JSON.parse(localStorage.getItem(`requests_${user?.username}`) || "[]")
 
-    const filteredAllRequests = allRequests.filter((req: Request) => req.id !== requestId)
-    const filteredUserRequests = userRequests.filter((req: Request) => req.id !== requestId)
+    const updatedAllRequests = allRequests.filter((req: Request) => req.id !== requestId)
+    const updatedUserRequests = userRequests.filter((req: Request) => req.id !== requestId)
 
-    localStorage.setItem("all_requests", JSON.stringify(filteredAllRequests))
-    localStorage.setItem(`requests_${user?.department}`, JSON.stringify(filteredUserRequests))
+    localStorage.setItem("all_requests", JSON.stringify(updatedAllRequests))
+    localStorage.setItem(`requests_${user?.username}`, JSON.stringify(updatedUserRequests))
 
-    setRequests(filteredUserRequests)
+    setRequests(updatedUserRequests)
+    calculateWorkerStats(user?.username || "")
     setShowDeleteConfirm(null)
-    calculateWorkerStats(user?.department || "")
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user) return
-
     setLoading(true)
     setMessage("")
 
     try {
+      if (!itemName.trim()) {
+        setMessage("يرجى إدخال اسم السلعة")
+        return
+      }
+
       const newRequest: Request = {
-        id: Date.now().toString(),
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         type: requestType,
         item_name: itemName,
         quantity: Number.parseInt(quantity) || 1,
         urgent: urgent === "yes",
-        notes,
+        notes: notes,
         status: "pending",
         created_at: new Date().toISOString(),
         response_notes: "",
-        user_department: user.department,
+        user_name: user?.username || "",
       }
+
+      console.log('إنشاء طلب جديد:', newRequest)
 
       saveRequest(newRequest)
 
-      if (requestType === "warehouse") {
-        setMessage("✅ تم إرسال الطلب إلى المخزن بنجاح")
-      } else {
-        setMessage("✅ تم إرسال الطلب إلى الموارد البشرية بنجاح")
-      }
+      // إضافة إشعار للطلب الجديد
+      addRequestNotification(user?.username || "", requestType === "warehouse" ? "المخزن" : "الموارد البشرية", "pending")
+      
+      // إضافة إشعار نشاط
+      addActivityNotification(user?.username || "", "request_created", `تم إنشاء طلب جديد: ${itemName}`)
 
-      // تشغيل صوت للطلب الجديد
-      if (urgent === "yes") {
-        audioNotifications.playUrgentRequestSound()
-      } else {
-        audioNotifications.playNewRequestSound()
-      }
+      // تحديث فوري للطلبات
+      setTimeout(() => {
+        loadRequests(user?.username || "")
+      }, 100)
 
       // إعادة تعيين النموذج
       setRequestType("")
@@ -254,9 +269,13 @@ export default function EnhancedWorkerDashboard() {
       setQuantity("")
       setUrgent("no")
       setNotes("")
+      setMessage("تم إرسال الطلب بنجاح! 🎉")
+
+      // تشغيل صوت النجاح
+      audioNotifications.playSuccessSound()
     } catch (error) {
-      setMessage("❌ حدث خطأ أثناء إرسال الطلب")
-      audioNotifications.playErrorSound()
+      setMessage("حدث خطأ أثناء إرسال الطلب")
+      console.error("Error submitting request:", error)
     } finally {
       setLoading(false)
     }
@@ -265,38 +284,51 @@ export default function EnhancedWorkerDashboard() {
   const handleEditRequest = () => {
     if (!editingRequest) return
 
+    try {
     updateRequest(editingRequest)
+      
+      // إضافة إشعار تحديث الطلب
+      addActivityNotification(user?.username || "", "request_updated", `تم تحديث طلب: ${editingRequest.item_name}`)
+      
     setEditingRequest(null)
-    setMessage("✅ تم تحديث الطلب بنجاح")
+      setMessage("تم تحديث الطلب بنجاح!")
+      
+      // تشغيل صوت النجاح
     audioNotifications.playSuccessSound()
+    } catch (error) {
+      setMessage("حدث خطأ أثناء تحديث الطلب")
+      console.error("Error updating request:", error)
+    }
   }
 
   const handleAddExpiringItem = () => {
-    if (!user || !expiringItemName || !expiryDate) return
+    if (!expiringItemName.trim() || !expiryDate) {
+      setMessage("يرجى إدخال اسم السلعة وتاريخ انتهاء الصلاحية")
+      return
+    }
 
-    const expiringItem: ExpiringItem = {
-      id: Date.now().toString(),
+    const newExpiringItem = {
       name: expiringItemName,
       expiry_date: expiryDate,
       location: itemLocation,
       notes: expiringNotes,
-      department: user.department,
     }
 
-    saveExpiringItem(expiringItem)
-
+    saveExpiringItem(newExpiringItem)
     setExpiringItemName("")
     setExpiryDate("")
     setItemLocation("")
     setExpiringNotes("")
     setShowExpiringDialog(false)
-    setMessage("✅ تم إضافة السلعة قريبة الانتهاء بنجاح")
-    audioNotifications.playSuccessSound()
+    setMessage("تم إضافة السلعة قريبة الانتهاء بنجاح!")
   }
 
   const handleExportPDF = () => {
     exportRequestsToPDF(requests)
-    audioNotifications.playSuccessSound()
+  }
+
+  const handleExportCSV = () => {
+    exportRequestsToCSV(requests)
   }
 
   const handleSignOut = () => {
@@ -353,54 +385,27 @@ export default function EnhancedWorkerDashboard() {
     }
   }
 
-  // إحصائيات للرسوم البيانية
-  const getChartData = () => {
-    const statusCounts = requests.reduce(
-      (acc, req) => {
-        acc[req.status] = (acc[req.status] || 0) + 1
-        return acc
-      },
-      {} as Record<string, number>,
-    )
-
-    const typeCounts = requests.reduce(
-      (acc, req) => {
-        const type = req.type === "warehouse" ? "مخزن" : "موارد بشرية"
-        acc[type] = (acc[type] || 0) + 1
-        return acc
-      },
-      {} as Record<string, number>,
-    )
-
-    const monthlyData = requests.reduce(
-      (acc, req) => {
-        const month = new Date(req.created_at).toLocaleDateString("ar-SA", { month: "short" })
-        acc[month] = (acc[month] || 0) + 1
-        return acc
-      },
-      {} as Record<string, number>,
-    )
+  const chartData = useMemo(() => {
+    const pendingCount = workerStats.pendingRequests || 0
+    const approvedCount = workerStats.approvedRequests || 0
+    const rejectedCount = Math.max(0, (workerStats.totalRequests || 0) - approvedCount - pendingCount)
+    
+    const warehouseCount = requests.filter((r) => r.type === "warehouse").length || 0
+    const hrCount = requests.filter((r) => r.type === "hr").length || 0
 
     return {
       statusChart: {
-        labels: Object.keys(statusCounts).map(getStatusText),
-        data: Object.values(statusCounts),
-        colors: ["#FCD34D", "#10B981", "#EF4444", "#3B82F6", "#8B5CF6"],
+        labels: ["قيد الانتظار", "موافق عليه", "مرفوض"],
+        data: [pendingCount, approvedCount, rejectedCount],
+        colors: ["#FCD34D", "#10B981", "#EF4444"],
       },
       typeChart: {
-        labels: Object.keys(typeCounts),
-        data: Object.values(typeCounts),
+        labels: ["مخزن", "موارد بشرية"],
+        data: [warehouseCount, hrCount],
         colors: ["#3B82F6", "#8B5CF6"],
       },
-      monthlyChart: {
-        labels: Object.keys(monthlyData),
-        data: Object.values(monthlyData),
-        colors: ["#10B981", "#3B82F6", "#F59E0B", "#EF4444", "#8B5CF6"],
-      },
     }
-  }
-
-  const chartData = getChartData()
+  }, [workerStats, requests])
 
   if (!user) {
     return (
@@ -416,306 +421,112 @@ export default function EnhancedWorkerDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50" dir="rtl">
       <header className="bg-white/90 backdrop-blur-lg shadow-xl border-b border-blue-100 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <div className="flex flex-col sm:flex-row justify-between items-center py-4 gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xl shadow-lg">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-lg sm:text-xl shadow-lg">
                 {user.avatar}
               </div>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   مرحباً، {user.name}
                 </h1>
-                <p className="text-gray-600 flex items-center gap-2">
+                <p className="text-gray-600 flex items-center gap-2 text-sm sm:text-base">
                   <Package className="h-4 w-4" />
-                  {user.department}
+                  {user.username}
                 </p>
               </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg">
-                <Bell className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-800">{workerStats.pendingRequests} طلب معلق</span>
               </div>
-              <Button
-                onClick={handleExportPDF}
-                variant="outline"
-                className="border-green-200 text-green-600 hover:bg-green-50 bg-transparent"
-              >
-                <Download className="ml-2 h-4 w-4" />
-                تصدير PDF
-              </Button>
               <Button
                 onClick={handleSignOut}
                 variant="outline"
-                className="border-red-200 text-red-600 hover:bg-red-50 bg-transparent"
+              className="border-red-200 text-red-600 hover:bg-red-50 bg-transparent w-full sm:w-auto"
               >
                 <LogOut className="ml-2 h-4 w-4" />
                 تسجيل الخروج
               </Button>
-            </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* إحصائيات الأداء الشخصي */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 transform hover:scale-105 transition-transform">
-            <CardContent className="p-6">
+      <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
+        <Tabs defaultValue="new-request" className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto sm:h-10">
+            <TabsTrigger value="new-request" className="text-xs sm:text-sm">طلب جديد</TabsTrigger>
+            <TabsTrigger value="my-requests" className="text-xs sm:text-sm">طلباتي</TabsTrigger>
+            <TabsTrigger value="analytics" className="text-xs sm:text-sm">الإحصائيات</TabsTrigger>
+            <TabsTrigger value="communication" className="text-xs sm:text-sm">التواصل</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="new-request">
+            <div className="space-y-4 sm:space-y-6">
+              {/* إحصائيات سريعة */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+                <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                  <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-blue-100">إجمالي الطلبات</p>
-                  <p className="text-3xl font-bold">{workerStats.totalRequests}</p>
+                        <p className="text-xs sm:text-sm opacity-90">إجمالي الطلبات</p>
+                        <p className="text-lg sm:text-2xl font-bold">{workerStats.totalRequests}</p>
                 </div>
-                <FileText className="h-8 w-8 text-blue-200" />
+                      <FileText className="h-6 w-6 sm:h-8 sm:w-8 opacity-80" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white border-0 transform hover:scale-105 transition-transform">
-            <CardContent className="p-6">
+                <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
+                  <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-green-100">معدل القبول</p>
-                  <p className="text-3xl font-bold">
-                    {workerStats.totalRequests > 0
-                      ? Math.round((workerStats.approvedRequests / workerStats.totalRequests) * 100)
-                      : 0}
-                    %
-                  </p>
+                        <p className="text-xs sm:text-sm opacity-90">الطلبات المقبولة</p>
+                        <p className="text-lg sm:text-2xl font-bold">{workerStats.approvedRequests}</p>
                 </div>
-                <CheckCircle className="h-8 w-8 text-green-200" />
+                      <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 opacity-80" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white border-0 transform hover:scale-105 transition-transform">
-            <CardContent className="p-6">
+                <Card className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white">
+                  <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-purple-100">معدل الرضا</p>
-                  <p className="text-3xl font-bold">{workerStats.satisfaction}%</p>
+                        <p className="text-xs sm:text-sm opacity-90">قيد الانتظار</p>
+                        <p className="text-lg sm:text-2xl font-bold">{workerStats.pendingRequests}</p>
                 </div>
-                <Star className="h-8 w-8 text-purple-200" />
+                      <Clock className="h-6 w-6 sm:h-8 sm:w-8 opacity-80" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 transform hover:scale-105 transition-transform">
-            <CardContent className="p-6">
+                <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+                  <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-orange-100">السلسلة الناجحة</p>
-                  <p className="text-3xl font-bold">{workerStats.streak}</p>
+                        <p className="text-xs sm:text-sm opacity-90">معدل الرضا</p>
+                        <p className="text-lg sm:text-2xl font-bold">{workerStats.satisfaction}%</p>
                 </div>
-                <Award className="h-8 w-8 text-orange-200" />
+                      <Star className="h-6 w-6 sm:h-8 sm:w-8 opacity-80" />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* رسالة التحفيز */}
-        {workerStats.streak >= 5 && (
-          <Alert className="mb-8 border-green-200 bg-green-50">
-            <Award className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-800">
-              🎉 ممتاز! لديك {workerStats.streak} طلبات متتالية مقبولة. استمر في الأداء الرائع!
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <Tabs defaultValue="new-request" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-white shadow-sm border">
-            <TabsTrigger value="new-request" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+              {/* نموذج الطلب الجديد */}
+              <Card className="shadow-lg border-0 bg-white/80 backdrop-blur">
+                <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-t-lg">
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Plus className="h-5 w-5" />
               طلب جديد
-            </TabsTrigger>
-            <TabsTrigger
-              value="my-requests"
-              className="data-[state=active]:bg-green-500 data-[state=active]:text-white"
-            >
-              طلباتي
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white">
-              إحصائياتي
-            </TabsTrigger>
-            <TabsTrigger
-              value="communication"
-              className="data-[state=active]:bg-indigo-500 data-[state=active]:text-white"
-            >
-              التواصل
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="new-request">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <Card className="shadow-xl border-0 bg-white/90 backdrop-blur">
-                  <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-t-lg">
-                    <CardTitle className="flex items-center gap-2">
-                      <Package className="h-5 w-5" />
-                      تسجيل طلب جديد
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    {message && (
-                      <Alert className="mb-4 border-green-200 bg-green-50">
-                        <AlertDescription className="text-green-800">{message}</AlertDescription>
-                      </Alert>
-                    )}
-
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">نوع الطلب</Label>
-                        <Select value={requestType} onValueChange={setRequestType} required>
-                          <SelectTrigger className="h-12 border-2 focus:border-blue-500">
-                            <SelectValue placeholder="اختر نوع الطلب" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="warehouse">📦 طلب من المخزن</SelectItem>
-                            <SelectItem value="hr">👔 طلب من إدارة الموارد البشرية</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {requestType && (
-                        <>
-                          <div className="space-y-2">
-                            <Label htmlFor="itemName" className="text-sm font-medium">
-                              اسم السلعة
-                            </Label>
-                            <Input
-                              id="itemName"
-                              value={itemName}
-                              onChange={(e) => setItemName(e.target.value)}
-                              placeholder="أدخل اسم السلعة"
-                              required
-                              className="h-12 border-2 focus:border-blue-500"
-                            />
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="quantity" className="text-sm font-medium">
-                                الكمية المطلوبة
-                              </Label>
-                              <Input
-                                id="quantity"
-                                type="number"
-                                value={quantity}
-                                onChange={(e) => setQuantity(e.target.value)}
-                                placeholder="الكمية"
-                                min="1"
-                                className="h-12 border-2 focus:border-blue-500"
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label className="text-sm font-medium">مستعجل؟</Label>
-                              <Select value={urgent} onValueChange={setUrgent}>
-                                <SelectTrigger className="h-12 border-2 focus:border-blue-500">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="no">لا</SelectItem>
-                                  <SelectItem value="yes">⚡ نعم - مستعجل</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="notes" className="text-sm font-medium">
-                              ملاحظات إضافية
-                            </Label>
-                            <Textarea
-                              id="notes"
-                              value={notes}
-                              onChange={(e) => setNotes(e.target.value)}
-                              placeholder="أضف أي ملاحظات إضافية (اختياري)"
-                              rows={3}
-                              className="resize-none border-2 focus:border-blue-500"
-                            />
-                          </div>
-
-                          <Button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full h-14 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium text-lg shadow-lg transform hover:scale-105 transition-all"
-                          >
-                            {loading ? (
-                              <>
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                                جاري الإرسال...
-                              </>
-                            ) : (
-                              <>
-                                <Plus className="ml-2 h-5 w-5" />
-                                إرسال الطلب
-                              </>
-                            )}
-                          </Button>
-                        </>
-                      )}
-                    </form>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="space-y-6">
-                {/* نصائح سريعة */}
-                <Card className="shadow-lg border-0 bg-white/90 backdrop-blur">
-                  <CardHeader className="bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-t-lg">
-                    <CardTitle className="flex items-center gap-2">
-                      <Target className="h-5 w-5" />
-                      نصائح للنجاح
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <div className="space-y-3">
-                      <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
-                        <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium text-green-900">كن واضحاً</p>
-                          <p className="text-xs text-green-700">اكتب اسم السلعة بوضوح</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
-                        <TrendingUp className="h-5 w-5 text-blue-600 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium text-blue-900">حدد الكمية</p>
-                          <p className="text-xs text-blue-700">اذكر الكمية المطلوبة بدقة</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg">
-                        <AlertTriangle className="h-5 w-5 text-purple-600 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium text-purple-900">استخدم المستعجل بحكمة</p>
-                          <p className="text-xs text-purple-700">فقط للحالات الضرورية</p>
-                        </div>
-                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-
-                {/* السلع قريبة الانتهاء */}
-                <Card className="shadow-lg border-0 bg-white/90 backdrop-blur">
-                  <CardHeader className="bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-t-lg">
-                    <CardTitle className="flex items-center gap-2">
-                      <AlertTriangle className="h-5 w-5" />
-                      سلع قريبة الانتهاء
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <p className="text-sm text-gray-600 mb-4">أضف السلع التي تقترب من تاريخ انتهاء الصلاحية للتذكير</p>
                     <Dialog open={showExpiringDialog} onOpenChange={setShowExpiringDialog}>
                       <DialogTrigger asChild>
-                        <Button className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-lg">
-                          <Plus className="ml-2 h-4 w-4" />
-                          إضافة سلعة
+                        <Button className="bg-white/20 hover:bg-white/30 text-white border-white/30">
+                          <AlertTriangle className="ml-2 h-4 w-4" />
+                          إضافة سلعة قريبة الانتهاء
                         </Button>
                       </DialogTrigger>
-                      <DialogContent>
+                      <DialogContent className="max-w-md">
                         <DialogHeader>
                           <DialogTitle>إضافة سلعة قريبة الانتهاء</DialogTitle>
                         </DialogHeader>
@@ -730,14 +541,18 @@ export default function EnhancedWorkerDashboard() {
                           </div>
                           <div className="space-y-2">
                             <Label>تاريخ انتهاء الصلاحية</Label>
-                            <Input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
+                            <Input
+                              type="date"
+                              value={expiryDate}
+                              onChange={(e) => setExpiryDate(e.target.value)}
+                            />
                           </div>
                           <div className="space-y-2">
                             <Label>الموقع</Label>
                             <Input
                               value={itemLocation}
                               onChange={(e) => setItemLocation(e.target.value)}
-                              placeholder="مكان السلعة"
+                              placeholder="أدخل موقع السلعة"
                             />
                           </div>
                           <div className="space-y-2">
@@ -745,8 +560,8 @@ export default function EnhancedWorkerDashboard() {
                             <Textarea
                               value={expiringNotes}
                               onChange={(e) => setExpiringNotes(e.target.value)}
-                              placeholder="ملاحظات إضافية"
-                              rows={2}
+                              placeholder="أدخل ملاحظات إضافية"
+                              rows={3}
                             />
                           </div>
                           <Button onClick={handleAddExpiringItem} className="w-full">
@@ -755,30 +570,123 @@ export default function EnhancedWorkerDashboard() {
                         </div>
                       </DialogContent>
                     </Dialog>
+                    </CardTitle>
+                  </CardHeader>
+                <CardContent className="p-4 sm:p-6">
+                    {message && (
+                    <Alert className="mb-4">
+                      <AlertDescription>{message}</AlertDescription>
+                      </Alert>
+                    )}
+
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>نوع الطلب</Label>
+                        <Select value={requestType} onValueChange={setRequestType}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="اختر نوع الطلب" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="warehouse">📦 طلب من المخزن</SelectItem>
+                            <SelectItem value="hr">👔 طلب من الموارد البشرية</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                          <div className="space-y-2">
+                        <Label>اسم السلعة</Label>
+                            <Input
+                              value={itemName}
+                              onChange={(e) => setItemName(e.target.value)}
+                          placeholder="أدخل اسم السلعة المطلوبة"
+                              required
+                            />
+                      </div>
+                          </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                        <Label>الكمية</Label>
+                              <Input
+                                type="number"
+                                value={quantity}
+                                onChange={(e) => setQuantity(e.target.value)}
+                          placeholder="أدخل الكمية المطلوبة"
+                                min="1"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                        <Label>مستعجل؟</Label>
+                              <Select value={urgent} onValueChange={setUrgent}>
+                          <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="no">لا</SelectItem>
+                                  <SelectItem value="yes">⚡ نعم - مستعجل</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                      <Label>ملاحظات إضافية</Label>
+                            <Textarea
+                              value={notes}
+                              onChange={(e) => setNotes(e.target.value)}
+                        placeholder="أدخل أي ملاحظات إضافية أو تفاصيل..."
+                              rows={3}
+                            />
+                          </div>
+
+                    <Button type="submit" className="w-full" disabled={loading}>
+                            {loading ? (
+                              <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"></div>
+                          جاري إرسال الطلب...
+                              </>
+                            ) : (
+                              <>
+                          <Plus className="ml-2 h-4 w-4" />
+                                إرسال الطلب
+                              </>
+                            )}
+                          </Button>
+                    </form>
                   </CardContent>
                 </Card>
-              </div>
             </div>
           </TabsContent>
 
           <TabsContent value="my-requests">
-            <Card className="shadow-xl border-0 bg-white/90 backdrop-blur">
-              <CardHeader className="bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-t-lg">
-                <CardTitle className="flex items-center justify-between">
+            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur">
+              <CardHeader className="bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-t-lg">
+                <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-2">
                     <FileText className="h-5 w-5" />
                     طلباتي السابقة
                   </div>
+                  <div className="flex gap-2">
                   <Button
                     onClick={handleExportPDF}
-                    className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                      className="bg-white/20 hover:bg-white/30 text-white border-white/30 w-full sm:w-auto"
                   >
                     <Download className="ml-2 h-4 w-4" />
                     تصدير PDF
                   </Button>
+                    <Button
+                      onClick={handleExportCSV}
+                      className="bg-white/20 hover:bg-white/30 text-blue-700 border-white/30 w-full sm:w-auto"
+                    >
+                      <Download className="ml-2 h-4 w-4" />
+                      تصدير Excel
+                    </Button>
+                  </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="space-y-4">
                   {requests.length === 0 ? (
                     <div className="text-center py-12">
@@ -787,13 +695,14 @@ export default function EnhancedWorkerDashboard() {
                       <p className="text-gray-400 text-sm">ابدأ بإنشاء طلبك الأول</p>
                     </div>
                   ) : (
-                    requests.map((request) => (
+                    <div className="space-y-4">
+                      {requests.map((request) => (
                       <div
                         key={request.id}
-                        className="border-2 border-gray-200 rounded-xl p-6 bg-white shadow-sm hover:shadow-lg transition-all transform hover:scale-[1.02]"
+                          className="border-2 border-gray-200 rounded-xl p-4 sm:p-6 bg-white shadow-sm hover:shadow-lg transition-all transform hover:scale-[1.02]"
                       >
-                        <div className="flex justify-between items-start mb-4">
-                          <div>
+                          <div className="flex flex-col sm:flex-row justify-between items-start mb-4 gap-4">
+                            <div className="flex-1">
                             <h3 className="font-bold text-lg text-gray-800">{request.item_name}</h3>
                             <p className="text-sm text-gray-600 flex items-center gap-2 mt-1">
                               {request.type === "warehouse" ? "📦" : "👔"}
@@ -831,7 +740,7 @@ export default function EnhancedWorkerDashboard() {
                           </div>
                         )}
 
-                        <div className="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-gray-100">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-gray-500 pt-3 border-t border-gray-100 gap-2">
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
                             {new Date(request.created_at).toLocaleDateString("ar-SA")}
@@ -861,7 +770,8 @@ export default function EnhancedWorkerDashboard() {
                           </div>
                         </div>
                       </div>
-                    ))
+                      ))}
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -948,17 +858,16 @@ export default function EnhancedWorkerDashboard() {
           </TabsContent>
 
           <TabsContent value="analytics">
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 <SimpleBarChart title="طلباتي حسب الحالة" data={chartData.statusChart} />
                 <SimplePieChart title="طلباتي حسب النوع" data={chartData.typeChart} />
               </div>
-              <ActivityChart title="نشاطي الشهري" data={chartData.monthlyChart} />
             </div>
           </TabsContent>
 
           <TabsContent value="communication">
-            <CommunicationPanel userRole={user.role} userName={user.name} />
+            <CommunicationPanel userRole={user.role} userName={user.username} />
           </TabsContent>
         </Tabs>
       </main>

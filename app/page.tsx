@@ -8,11 +8,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Package, BarChart3, Shield, Zap, Globe, Volume2 } from "lucide-react"
-import { login, getCurrentUser, initializeSystem } from "@/lib/enhanced-auth"
+import { login, getCurrentUser, initializeSystem, authenticateUser, setCurrentUser } from "@/lib/enhanced-auth"
 import { cleanupOldData, shouldRunCleanup } from "@/lib/data-cleanup"
 import { createBackup, shouldCreateBackup } from "@/lib/backup-system"
 import { audioNotifications } from "@/lib/audio-notifications"
@@ -20,7 +20,6 @@ import { audioNotifications } from "@/lib/audio-notifications"
 export default function LoginPage() {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
-  const [department, setDepartment] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [showFeatures, setShowFeatures] = useState(false)
@@ -73,12 +72,17 @@ export default function LoginPage() {
     setError("")
 
     try {
-      const user = login(username, password, department)
+      console.log('محاولة تسجيل الدخول:', { username, password })
+      const user = authenticateUser(username, password)
+      console.log('نتيجة authenticateUser:', user)
       if (user) {
+        setCurrentUser(user)
+        console.log('تم حفظ المستخدم في localStorage:', user)
         audioNotifications.playSuccessSound()
+        console.log('سيتم التوجيه إلى:', user.role)
         redirectUser(user.role)
       } else {
-        setError("بيانات تسجيل الدخول غير صحيحة")
+        setError("اسم المستخدم أو كلمة المرور غير صحيحة")
         audioNotifications.playErrorSound()
       }
     } catch (err) {
@@ -130,12 +134,12 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4"
+      className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4 container-mobile"
       dir="rtl"
     >
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center space-mobile">
         {/* نموذج تسجيل الدخول */}
-        <Card className="w-full max-w-md mx-auto shadow-2xl border-0 bg-white/90 backdrop-blur-lg">
+        <Card className="w-full max-w-md mx-auto shadow-2xl border-0 bg-white/90 backdrop-blur-lg card-mobile">
           <CardHeader className="text-center bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-t-lg">
             <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <Package className="h-10 w-10 text-white" />
@@ -150,7 +154,7 @@ export default function LoginPage() {
               </Alert>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="form-mobile space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="username" className="text-sm font-medium">
                   اسم المستخدم
@@ -162,7 +166,7 @@ export default function LoginPage() {
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="أدخل اسم المستخدم"
                   required
-                  className="h-12 border-2 focus:border-blue-500 transition-colors"
+                  className="input-mobile h-12 border-2 focus:border-blue-500 transition-colors"
                 />
               </div>
 
@@ -177,33 +181,16 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="أدخل كلمة المرور"
                   required
-                  className="h-12 border-2 focus:border-blue-500 transition-colors"
+                  className="input-mobile h-12 border-2 focus:border-blue-500 transition-colors"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">القسم</Label>
-                <Select value={department} onValueChange={setDepartment} required>
-                  <SelectTrigger className="h-12 border-2 focus:border-blue-500">
-                    <SelectValue placeholder="اختر القسم" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="الإنتاج">🏭 الإنتاج</SelectItem>
-                    <SelectItem value="المبيعات">💼 المبيعات</SelectItem>
-                    <SelectItem value="التسويق">📈 التسويق</SelectItem>
-                    <SelectItem value="المحاسبة">💰 المحاسبة</SelectItem>
-                    <SelectItem value="تقنية المعلومات">💻 تقنية المعلومات</SelectItem>
-                    <SelectItem value="الصيانة">🔧 الصيانة</SelectItem>
-                    <SelectItem value="الأمن">🛡️ الأمن</SelectItem>
-                    <SelectItem value="النظافة">🧹 النظافة</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+
 
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-14 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium text-lg shadow-lg transform hover:scale-105 transition-all"
+                className="btn-mobile w-full h-14 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium text-lg shadow-lg transform hover:scale-105 transition-all"
               >
                 {loading ? (
                   <>
@@ -217,19 +204,19 @@ export default function LoginPage() {
             </form>
 
             <div className="mt-8 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
-              <h3 className="font-medium text-gray-800 mb-3">حسابات تجريبية:</h3>
+              <h3 className="font-medium text-gray-800 mb-3">أمثلة على أسماء المستخدمين:</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">👷 عامل:</span>
-                  <Badge className="bg-blue-100 text-blue-800 border-blue-200">worker / 123</Badge>
+                  <span className="text-gray-600">👨‍💼 ممر1:</span>
+                  <Badge className="bg-blue-100 text-blue-800 border-blue-200">ممر1 / 311</Badge>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">📦 أمين مخزن:</span>
-                  <Badge className="bg-green-100 text-green-800 border-green-200">warehouse / 123</Badge>
+                  <span className="text-gray-600">📦 المخزن:</span>
+                  <Badge className="bg-green-100 text-green-800 border-green-200">المخزن / 932</Badge>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">👔 موارد بشرية:</span>
-                  <Badge className="bg-purple-100 text-purple-800 border-purple-200">hr / 123</Badge>
+                  <span className="text-gray-600">👔 الموارد البشرية:</span>
+                  <Badge className="bg-purple-100 text-purple-800 border-purple-200">hr / 237</Badge>
                 </div>
               </div>
             </div>
@@ -241,13 +228,13 @@ export default function LoginPage() {
           className={`space-y-6 transition-all duration-1000 ${showFeatures ? "opacity-100 translate-x-0" : "opacity-0 translate-x-10"}`}
         >
           <div className="text-center mb-8">
-            <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+            <h2 className="text-responsive-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
               نظام إدارة متطور
             </h2>
-            <p className="text-xl text-gray-600">حلول شاملة لإدارة المخزون والطلبات مع تحليلات متقدمة</p>
+            <p className="text-responsive text-gray-600">حلول شاملة لإدارة المخزون والطلبات مع تحليلات متقدمة</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-mobile gap-4">
             {features.map((feature, index) => (
               <Card
                 key={index}

@@ -1,6 +1,5 @@
 "use client"
 
-import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -8,8 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, Shield, Users } from "lucide-react"
-import { authenticateUser, setCurrentUser } from "@/lib/enhanced-auth"
+import { Loader2, Shield, User, Lock } from "lucide-react"
+import { login } from "@/lib/enhanced-auth"
 
 export default function EnhancedLoginForm() {
   const [username, setUsername] = useState("")
@@ -18,50 +17,66 @@ export default function EnhancedLoginForm() {
   const [error, setError] = useState("")
   const router = useRouter()
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError("")
 
     try {
-      const user = authenticateUser(username, password)
-
-      if (!user) {
-        setError("اسم المستخدم أو كلمة المرور غير صحيحة")
+      // التحقق من صحة البيانات
+      if (!username.trim()) {
+        setError("يرجى إدخال اسم المستخدم")
+        setLoading(false)
         return
       }
 
-      setCurrentUser(user)
-
-      // إعادة التوجيه حسب نوع المستخدم
-      if (user.role === "worker") {
-        router.push("/worker")
-      } else if (user.role === "warehouse") {
-        router.push("/warehouse")
-      } else if (user.role === "hr") {
-        router.push("/hr")
+      if (!password.trim()) {
+        setError("يرجى إدخال كلمة المرور")
+        setLoading(false)
+        return
       }
-    } catch (err) {
-      setError("حدث خطأ أثناء تسجيل الدخول")
+
+      const user = login(username, password)
+      if (user) {
+        // التوجيه حسب الدور
+        switch (user.role) {
+          case "worker":
+            router.push("/worker")
+            break
+          case "warehouse":
+            router.push("/warehouse")
+            break
+          case "hr":
+            router.push("/hr")
+            break
+          default:
+            router.push("/")
+        }
+      } else {
+        setError("اسم المستخدم أو كلمة المرور غير صحيحة. تأكد من إدخال البيانات بشكل صحيح.")
+      }
+    } catch (error) {
+      setError("حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.")
+      console.error("Login error:", error)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="w-full max-w-md">
-      <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur">
-        <CardHeader className="text-center pb-2">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4">
+      <Card className="w-full max-w-md shadow-2xl border-0 bg-white/90 backdrop-blur">
+        <CardHeader className="text-center pb-6">
           <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
             <Shield className="h-8 w-8 text-white" />
           </div>
-          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            نظام إدارة الطلبات
+          <CardTitle className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            تسجيل الدخول
           </CardTitle>
-          <p className="text-gray-600 text-sm">تسجيل الدخول للوصول إلى النظام</p>
+          <p className="text-gray-600 text-sm sm:text-base mt-2">أدخل بياناتك للوصول إلى النظام</p>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSignIn} className="space-y-4">
+        <CardContent className="p-6 sm:p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <Alert variant="destructive" className="border-red-200 bg-red-50">
                 <AlertDescription className="text-red-800">{error}</AlertDescription>
@@ -69,64 +84,75 @@ export default function EnhancedLoginForm() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-sm font-medium">
+              <Label htmlFor="username" className="text-sm font-medium text-gray-700">
                 اسم المستخدم
               </Label>
-              <Input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                placeholder="مثال: ممر1، المخزن، hr"
-                className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-              />
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="أدخل اسم المستخدم"
+                  required
+                  className="pl-10 h-12 text-center text-base"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">
-                كلمة المرور (3 أرقام)
+              <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                كلمة المرور
               </Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="أدخل 3 أرقام"
-                maxLength={3}
-                pattern="[0-9]{3}"
-                className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-              />
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="أدخل كلمة المرور"
+                  required
+                  className="pl-10 h-12 text-center text-base"
+                />
+              </div>
             </div>
 
-            <Button
-              type="submit"
+            <Button 
+              type="submit" 
+              className="w-full h-12 text-base font-medium bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg transform hover:scale-105 transition-all" 
               disabled={loading}
-              className="w-full h-11 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium"
             >
-              {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-              تسجيل الدخول
+              {loading ? (
+                <>
+                  <Loader2 className="ml-2 h-5 w-5 animate-spin" />
+                  جاري تسجيل الدخول...
+                </>
+              ) : (
+                "تسجيل الدخول"
+              )}
             </Button>
           </form>
 
-          <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-100">
-            <h3 className="font-semibold mb-3 text-gray-800 flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              أمثلة على أسماء المستخدمين:
-            </h3>
-            <div className="text-sm text-gray-700 space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                <span>للممرات: ممر1، ممر2، ممر3... إلخ</span>
+          <div className="mt-8 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
+            <h3 className="font-semibold text-gray-800 mb-3 text-center">بيانات تسجيل الدخول:</h3>
+            <div className="text-sm text-gray-600 space-y-2">
+              <div className="flex items-center justify-between p-2 bg-white rounded-lg">
+                <span className="font-medium">الممرات:</span>
+                <span>ممر1-ممر10</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                <span>للمخزن: المخزن</span>
+              <div className="flex items-center justify-between p-2 bg-white rounded-lg">
+                <span className="font-medium">كلمة المرور:</span>
+                <span>311, 342, 353, 364, 375, 386, 397, 408, 419, 420</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                <span>للموارد البشرية: hr</span>
+              <div className="flex items-center justify-between p-2 bg-white rounded-lg">
+                <span className="font-medium">المخزن:</span>
+                <span>المخزن (932)</span>
+              </div>
+              <div className="flex items-center justify-between p-2 bg-white rounded-lg">
+                <span className="font-medium">الموارد البشرية:</span>
+                <span>hr (237)</span>
               </div>
             </div>
           </div>

@@ -12,33 +12,46 @@ export interface BackupData {
   }
 }
 
+import { addActivityNotification } from "./communication"
+
 export const createBackup = (): BackupData => {
-  const backup: BackupData = {
-    timestamp: new Date().toISOString(),
-    version: "1.0.0",
-    data: {
-      requests: JSON.parse(localStorage.getItem("all_requests") || "[]"),
-      inventory: JSON.parse(localStorage.getItem("warehouse_inventory") || "[]"),
-      expiringItems: JSON.parse(localStorage.getItem("expiring_items") || "[]"),
-      users: JSON.parse(localStorage.getItem("users") || "[]"),
-      messages: JSON.parse(localStorage.getItem("messages") || "[]"),
-      notifications: JSON.parse(localStorage.getItem("notifications") || "[]"),
-    },
+  try {
+    const backup: BackupData = {
+      timestamp: new Date().toISOString(),
+      version: "1.0.0",
+      data: {
+        requests: JSON.parse(localStorage.getItem("all_requests") || "[]"),
+        inventory: JSON.parse(localStorage.getItem("inventory_items") || "[]"),
+        expiringItems: JSON.parse(localStorage.getItem("expiring_items") || "[]"),
+        users: JSON.parse(localStorage.getItem("users") || "[]"),
+        messages: JSON.parse(localStorage.getItem("messages") || "[]"),
+        notifications: JSON.parse(localStorage.getItem("notifications") || "[]"),
+      },
+    }
+
+    const backups = JSON.parse(localStorage.getItem("backups") || "[]")
+    backups.push(backup)
+    
+    // الاحتفاظ بآخر 10 نسخ احتياطية فقط
+    if (backups.length > 10) {
+      backups.splice(0, backups.length - 10)
+    }
+    
+    localStorage.setItem("backups", JSON.stringify(backups))
+    localStorage.setItem("lastBackup", backup.timestamp)
+    
+    // إضافة إشعار
+    const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}")
+    if (currentUser.username) {
+      addActivityNotification(currentUser.username, "backup_created", `تم إنشاء نسخة احتياطية في ${new Date().toLocaleString("ar-SA")}`)
+    }
+    
+    console.log("تم إنشاء نسخة احتياطية بنجاح")
+    return backup
+  } catch (error) {
+    console.error("خطأ في إنشاء النسخة الاحتياطية:", error)
+    throw error
   }
-
-  // حفظ النسخة الاحتياطية محلياً
-  const backups = JSON.parse(localStorage.getItem("backups") || "[]")
-  backups.push(backup)
-
-  // الاحتفاظ بآخر 10 نسخ احتياطية فقط
-  if (backups.length > 10) {
-    backups.splice(0, backups.length - 10)
-  }
-
-  localStorage.setItem("backups", JSON.stringify(backups))
-  localStorage.setItem("last_backup", new Date().toISOString())
-
-  return backup
 }
 
 export const downloadBackup = (backup: BackupData) => {

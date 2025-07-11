@@ -52,7 +52,7 @@ export function SimpleBarChart({ title, data, className }: ChartProps) {
 }
 
 export function SimplePieChart({ title, data, className }: ChartProps) {
-  const total = data.data.reduce((sum, value) => sum + value, 0)
+  const total = data.data.reduce((sum, value) => sum + (value || 0), 0)
 
   return (
     <Card className={`shadow-lg border-0 bg-white/80 backdrop-blur ${className}`}>
@@ -81,7 +81,7 @@ export function SimplePieChart({ title, data, className }: ChartProps) {
                     stroke={data.colors[index % data.colors.length]}
                     strokeWidth="8"
                     strokeDasharray={strokeDasharray}
-                    strokeDashoffset={-strokeDashoffset}
+                    strokeDashoffset={isNaN(-strokeDashoffset) ? "0" : String(-strokeDashoffset)}
                     className="transition-all duration-500"
                   />
                 )
@@ -185,7 +185,7 @@ export function ActivityChart({ title, data, className }: ChartProps) {
 
 // رسم بياني دائري متقدم
 export function AdvancedPieChart({ title, data, className }: ChartProps) {
-  const total = data.data.reduce((sum, value) => sum + value, 0)
+  const total = data.data.reduce((sum, value) => sum + (value || 0), 0)
 
   return (
     <Card className={`shadow-lg border-0 bg-white/80 backdrop-blur ${className}`}>
@@ -217,7 +217,7 @@ export function AdvancedPieChart({ title, data, className }: ChartProps) {
                     stroke={data.colors[index % data.colors.length]}
                     strokeWidth="8"
                     strokeDasharray={strokeDasharray}
-                    strokeDashoffset={strokeDashoffset}
+                    strokeDashoffset={isNaN(strokeDashoffset) ? "0" : String(strokeDashoffset)}
                     style={{
                       transformOrigin: "50% 50%",
                       transform: `rotate(${rotation}deg)`,

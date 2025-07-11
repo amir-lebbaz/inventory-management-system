@@ -24,6 +24,19 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222.2 84% 4.9%;
+    --sidebar-primary: 221.2 83.2% 53.3%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 222.2 84% 4.9%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-ring: 221.2 83.2% 53.3%;
   }
 
   .dark {
@@ -46,6 +59,19 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 94.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 222.2 84% 4.9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 217.2 91.2% 59.8%;
+    --sidebar-primary-foreground: 222.2 84% 4.9%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 224.3 76.3% 94.1%;
   }
 }
 
@@ -58,27 +84,683 @@
   }
 }
 
-/* RTL Support */
-[dir="rtl"] {
-  text-align: right;
+/* تحسينات للتصميم المتجاوب */
+@layer components {
+  /* تحسين النصوص للهواتف */
+  .text-responsive {
+    @apply text-sm sm:text-base md:text-lg lg:text-xl;
+  }
+  
+  .text-responsive-lg {
+    @apply text-lg sm:text-xl md:text-2xl lg:text-3xl;
+  }
+  
+  .text-responsive-xl {
+    @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl;
+  }
+
+  /* تحسين الأزرار للهواتف */
+  .btn-mobile {
+    @apply h-12 sm:h-10 text-sm sm:text-base px-4 sm:px-6;
+  }
+
+  /* تحسين البطاقات للهواتف */
+  .card-mobile {
+    @apply p-4 sm:p-6 rounded-lg sm:rounded-xl;
+  }
+
+  /* تحسين الجداول للهواتف */
+  .table-mobile {
+    @apply text-xs sm:text-sm;
+  }
+
+  .table-mobile th,
+  .table-mobile td {
+    @apply px-2 sm:px-4 py-2 sm:py-3;
+  }
+
+  /* تحسين النماذج للهواتف */
+  .form-mobile {
+    @apply space-y-4 sm:space-y-6;
+  }
+
+  .input-mobile {
+    @apply h-12 sm:h-10 text-sm sm:text-base;
+  }
+
+  /* تحسين الشبكة للهواتف */
+  .grid-mobile {
+    @apply grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  }
+
+  .grid-mobile-2 {
+    @apply grid-cols-1 sm:grid-cols-2;
+  }
+
+  /* تحسين المسافات للهواتف */
+  .space-mobile {
+    @apply space-y-4 sm:space-y-6 lg:space-y-8;
+  }
+
+  .gap-mobile {
+    @apply gap-4 sm:gap-6 lg:gap-8;
+  }
+
+  /* تحسين الحاويات للهواتف */
+  .container-mobile {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+
+  /* تحسين الشريط الجانبي للهواتف */
+  .sidebar-mobile {
+    @apply w-full sm:w-64 lg:w-80;
+  }
+
+  /* تحسين التنقل للهواتف */
+  .nav-mobile {
+    @apply flex-col sm:flex-row;
+  }
+
+  /* تحسين التبويبات للهواتف */
+  .tabs-mobile {
+    @apply grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
+  }
+
+  /* تحسين الرسوم البيانية للهواتف */
+  .chart-mobile {
+    @apply h-48 sm:h-64 lg:h-80;
+  }
+
+  /* تحسين الإشعارات للهواتف */
+  .toast-mobile {
+    @apply max-w-sm sm:max-w-md lg:max-w-lg;
+  }
+
+  /* تحسين الحوارات للهواتف */
+  .dialog-mobile {
+    @apply w-[95vw] sm:w-[80vw] md:w-[70vw] lg:w-[60vw] xl:w-[50vw];
+  }
+
+  /* تحسين القوائم للهواتف */
+  .menu-mobile {
+    @apply text-sm sm:text-base;
+  }
+
+  /* تحسين الأيقونات للهواتف */
+  .icon-mobile {
+    @apply h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6;
+  }
+
+  /* تحسين الشارات للهواتف */
+  .badge-mobile {
+    @apply text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5;
+  }
+
+  /* تحسين النصوص العربية للهواتف */
+  .rtl-mobile {
+    @apply text-right leading-relaxed;
+  }
+
+  /* تحسين الألوان للهواتف */
+  .gradient-mobile {
+    @apply bg-gradient-to-br from-blue-50 via-white to-purple-50;
+  }
+
+  /* تحسين الظلال للهواتف */
+  .shadow-mobile {
+    @apply shadow-lg sm:shadow-xl;
+  }
+
+  /* تحسين الحدود للهواتف */
+  .border-mobile {
+    @apply border-2 sm:border;
+  }
+
+  /* تحسين الحالة النشطة للهواتف */
+  .active-mobile {
+    @apply bg-blue-50 sm:bg-blue-100;
+  }
+
+  /* تحسين الحالة المعطلة للهواتف */
+  .disabled-mobile {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  /* تحسين التحميل للهواتف */
+  .loading-mobile {
+    @apply animate-pulse bg-gray-200 rounded;
+  }
+
+  /* تحسين الأخطاء للهواتف */
+  .error-mobile {
+    @apply text-red-600 bg-red-50 border-red-200;
+  }
+
+  /* تحسين النجاح للهواتف */
+  .success-mobile {
+    @apply text-green-600 bg-green-50 border-green-200;
+  }
+
+  /* تحسين التحذيرات للهواتف */
+  .warning-mobile {
+    @apply text-yellow-600 bg-yellow-50 border-yellow-200;
+  }
+
+  /* تحسين المعلومات للهواتف */
+  .info-mobile {
+    @apply text-blue-600 bg-blue-50 border-blue-200;
+  }
 }
 
-[dir="rtl"] .ml-2 {
-  margin-left: 0;
-  margin-right: 0.5rem;
+/* تحسينات خاصة بالهواتف */
+@media (max-width: 640px) {
+  /* تحسين النصوص للهواتف الصغيرة */
+  .text-xs-mobile {
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+
+  /* تحسين الأزرار للهواتف الصغيرة */
+  .btn-xs-mobile {
+    height: 2.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  /* تحسين البطاقات للهواتف الصغيرة */
+  .card-xs-mobile {
+    padding: 1rem;
+    border-radius: 0.5rem;
+  }
+
+  /* تحسين الجداول للهواتف الصغيرة */
+  .table-xs-mobile {
+    font-size: 0.75rem;
+  }
+
+  .table-xs-mobile th,
+  .table-xs-mobile td {
+    padding: 0.5rem 0.25rem;
+  }
+
+  /* تحسين النماذج للهواتف الصغيرة */
+  .form-xs-mobile {
+    gap: 1rem;
+  }
+
+  .input-xs-mobile {
+    height: 2.5rem;
+    font-size: 0.875rem;
+  }
+
+  /* تحسين الشبكة للهواتف الصغيرة */
+  .grid-xs-mobile {
+    grid-template-columns: 1fr;
+  }
+
+  /* تحسين المسافات للهواتف الصغيرة */
+  .space-xs-mobile {
+    gap: 1rem;
+  }
+
+  /* تحسين الحاويات للهواتف الصغيرة */
+  .container-xs-mobile {
+    padding: 0 1rem;
+  }
+
+  /* تحسين الشريط الجانبي للهواتف الصغيرة */
+  .sidebar-xs-mobile {
+    width: 100%;
+  }
+
+  /* تحسين التنقل للهواتف الصغيرة */
+  .nav-xs-mobile {
+    flex-direction: column;
+  }
+
+  /* تحسين التبويبات للهواتف الصغيرة */
+  .tabs-xs-mobile {
+    grid-template-columns: 1fr;
+  }
+
+  /* تحسين الرسوم البيانية للهواتف الصغيرة */
+  .chart-xs-mobile {
+    height: 12rem;
+  }
+
+  /* تحسين الإشعارات للهواتف الصغيرة */
+  .toast-xs-mobile {
+    max-width: 90vw;
+  }
+
+  /* تحسين الحوارات للهواتف الصغيرة */
+  .dialog-xs-mobile {
+    width: 95vw;
+  }
+
+  /* تحسين القوائم للهواتف الصغيرة */
+  .menu-xs-mobile {
+    font-size: 0.875rem;
+  }
+
+  /* تحسين الأيقونات للهواتف الصغيرة */
+  .icon-xs-mobile {
+    height: 1rem;
+    width: 1rem;
+  }
+
+  /* تحسين الشارات للهواتف الصغيرة */
+  .badge-xs-mobile {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  /* تحسين النصوص العربية للهواتف الصغيرة */
+  .rtl-xs-mobile {
+    text-align: right;
+    line-height: 1.5;
+  }
+
+  /* تحسين الألوان للهواتف الصغيرة */
+  .gradient-xs-mobile {
+    background: linear-gradient(to bottom right, #eff6ff, #ffffff, #faf5ff);
+  }
+
+  /* تحسين الظلال للهواتف الصغيرة */
+  .shadow-xs-mobile {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  /* تحسين الحدود للهواتف الصغيرة */
+  .border-xs-mobile {
+    border-width: 1px;
+  }
+
+  /* تحسين الحالة النشطة للهواتف الصغيرة */
+  .active-xs-mobile {
+    background-color: #eff6ff;
+  }
+
+  /* تحسين الحالة المعطلة للهواتف الصغيرة */
+  .disabled-xs-mobile {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* تحسين التحميل للهواتف الصغيرة */
+  .loading-xs-mobile {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    background-color: #e5e7eb;
+    border-radius: 0.25rem;
+  }
+
+  /* تحسين الأخطاء للهواتف الصغيرة */
+  .error-xs-mobile {
+    color: #dc2626;
+    background-color: #fef2f2;
+    border-color: #fecaca;
+  }
+
+  /* تحسين النجاح للهواتف الصغيرة */
+  .success-xs-mobile {
+    color: #16a34a;
+    background-color: #f0fdf4;
+    border-color: #bbf7d0;
+  }
+
+  /* تحسين التحذيرات للهواتف الصغيرة */
+  .warning-xs-mobile {
+    color: #ca8a04;
+    background-color: #fefce8;
+    border-color: #fef08a;
+  }
+
+  /* تحسين المعلومات للهواتف الصغيرة */
+  .info-xs-mobile {
+    color: #2563eb;
+    background-color: #eff6ff;
+    border-color: #bfdbfe;
+  }
 }
 
-[dir="rtl"] .mr-2 {
-  margin-right: 0;
-  margin-left: 0.5rem;
+/* تحسينات خاصة بالأجهزة اللوحية */
+@media (min-width: 641px) and (max-width: 1024px) {
+  /* تحسين النصوص للأجهزة اللوحية */
+  .text-tablet {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  /* تحسين الأزرار للأجهزة اللوحية */
+  .btn-tablet {
+    height: 2.75rem;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+  }
+
+  /* تحسين البطاقات للأجهزة اللوحية */
+  .card-tablet {
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+  }
+
+  /* تحسين الجداول للأجهزة اللوحية */
+  .table-tablet {
+    font-size: 0.875rem;
+  }
+
+  .table-tablet th,
+  .table-tablet td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  /* تحسين النماذج للأجهزة اللوحية */
+  .form-tablet {
+    gap: 1.5rem;
+  }
+
+  .input-tablet {
+    height: 2.75rem;
+    font-size: 1rem;
+  }
+
+  /* تحسين الشبكة للأجهزة اللوحية */
+  .grid-tablet {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* تحسين المسافات للأجهزة اللوحية */
+  .space-tablet {
+    gap: 1.5rem;
+  }
+
+  /* تحسين الحاويات للأجهزة اللوحية */
+  .container-tablet {
+    padding: 0 1.5rem;
+  }
+
+  /* تحسين الشريط الجانبي للأجهزة اللوحية */
+  .sidebar-tablet {
+    width: 16rem;
+  }
+
+  /* تحسين التنقل للأجهزة اللوحية */
+  .nav-tablet {
+    flex-direction: row;
+  }
+
+  /* تحسين التبويبات للأجهزة اللوحية */
+  .tabs-tablet {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* تحسين الرسوم البيانية للأجهزة اللوحية */
+  .chart-tablet {
+    height: 16rem;
+  }
+
+  /* تحسين الإشعارات للأجهزة اللوحية */
+  .toast-tablet {
+    max-width: 24rem;
+  }
+
+  /* تحسين الحوارات للأجهزة اللوحية */
+  .dialog-tablet {
+    width: 70vw;
+  }
+
+  /* تحسين القوائم للأجهزة اللوحية */
+  .menu-tablet {
+    font-size: 1rem;
+  }
+
+  /* تحسين الأيقونات للأجهزة اللوحية */
+  .icon-tablet {
+    height: 1.25rem;
+    width: 1.25rem;
+  }
+
+  /* تحسين الشارات للأجهزة اللوحية */
+  .badge-tablet {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+  }
+
+  /* تحسين النصوص العربية للأجهزة اللوحية */
+  .rtl-tablet {
+    text-align: right;
+    line-height: 1.6;
+  }
+
+  /* تحسين الألوان للأجهزة اللوحية */
+  .gradient-tablet {
+    background: linear-gradient(to bottom right, #eff6ff, #ffffff, #faf5ff);
+  }
+
+  /* تحسين الظلال للأجهزة اللوحية */
+  .shadow-tablet {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+
+  /* تحسين الحدود للأجهزة اللوحية */
+  .border-tablet {
+    border-width: 1px;
+  }
+
+  /* تحسين الحالة النشطة للأجهزة اللوحية */
+  .active-tablet {
+    background-color: #dbeafe;
+  }
+
+  /* تحسين الحالة المعطلة للأجهزة اللوحية */
+  .disabled-tablet {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* تحسين التحميل للأجهزة اللوحية */
+  .loading-tablet {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    background-color: #e5e7eb;
+    border-radius: 0.375rem;
+  }
+
+  /* تحسين الأخطاء للأجهزة اللوحية */
+  .error-tablet {
+    color: #dc2626;
+    background-color: #fef2f2;
+    border-color: #fecaca;
+  }
+
+  /* تحسين النجاح للأجهزة اللوحية */
+  .success-tablet {
+    color: #16a34a;
+    background-color: #f0fdf4;
+    border-color: #bbf7d0;
+  }
+
+  /* تحسين التحذيرات للأجهزة اللوحية */
+  .warning-tablet {
+    color: #ca8a04;
+    background-color: #fefce8;
+    border-color: #fef08a;
+  }
+
+  /* تحسين المعلومات للأجهزة اللوحية */
+  .info-tablet {
+    color: #2563eb;
+    background-color: #eff6ff;
+    border-color: #bfdbfe;
+  }
 }
 
-[dir="rtl"] .ml-auto {
-  margin-left: 0;
-  margin-right: auto;
-}
+/* تحسينات خاصة بأجهزة الكمبيوتر */
+@media (min-width: 1025px) {
+  /* تحسين النصوص لأجهزة الكمبيوتر */
+  .text-desktop {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
 
-[dir="rtl"] .mr-auto {
-  margin-right: 0;
-  margin-left: auto;
+  /* تحسين الأزرار لأجهزة الكمبيوتر */
+  .btn-desktop {
+    height: 3rem;
+    padding: 0.875rem 2rem;
+    font-size: 1.125rem;
+  }
+
+  /* تحسين البطاقات لأجهزة الكمبيوتر */
+  .card-desktop {
+    padding: 2rem;
+    border-radius: 1rem;
+  }
+
+  /* تحسين الجداول لأجهزة الكمبيوتر */
+  .table-desktop {
+    font-size: 1rem;
+  }
+
+  .table-desktop th,
+  .table-desktop td {
+    padding: 1rem 0.75rem;
+  }
+
+  /* تحسين النماذج لأجهزة الكمبيوتر */
+  .form-desktop {
+    gap: 2rem;
+  }
+
+  .input-desktop {
+    height: 3rem;
+    font-size: 1.125rem;
+  }
+
+  /* تحسين الشبكة لأجهزة الكمبيوتر */
+  .grid-desktop {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  /* تحسين المسافات لأجهزة الكمبيوتر */
+  .space-desktop {
+    gap: 2rem;
+  }
+
+  /* تحسين الحاويات لأجهزة الكمبيوتر */
+  .container-desktop {
+    padding: 0 2rem;
+  }
+
+  /* تحسين الشريط الجانبي لأجهزة الكمبيوتر */
+  .sidebar-desktop {
+    width: 20rem;
+  }
+
+  /* تحسين التنقل لأجهزة الكمبيوتر */
+  .nav-desktop {
+    flex-direction: row;
+  }
+
+  /* تحسين التبويبات لأجهزة الكمبيوتر */
+  .tabs-desktop {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* تحسين الرسوم البيانية لأجهزة الكمبيوتر */
+  .chart-desktop {
+    height: 20rem;
+  }
+
+  /* تحسين الإشعارات لأجهزة الكمبيوتر */
+  .toast-desktop {
+    max-width: 28rem;
+  }
+
+  /* تحسين الحوارات لأجهزة الكمبيوتر */
+  .dialog-desktop {
+    width: 50vw;
+  }
+
+  /* تحسين القوائم لأجهزة الكمبيوتر */
+  .menu-desktop {
+    font-size: 1.125rem;
+  }
+
+  /* تحسين الأيقونات لأجهزة الكمبيوتر */
+  .icon-desktop {
+    height: 1.5rem;
+    width: 1.5rem;
+  }
+
+  /* تحسين الشارات لأجهزة الكمبيوتر */
+  .badge-desktop {
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+  }
+
+  /* تحسين النصوص العربية لأجهزة الكمبيوتر */
+  .rtl-desktop {
+    text-align: right;
+    line-height: 1.7;
+  }
+
+  /* تحسين الألوان لأجهزة الكمبيوتر */
+  .gradient-desktop {
+    background: linear-gradient(to bottom right, #eff6ff, #ffffff, #faf5ff);
+  }
+
+  /* تحسين الظلال لأجهزة الكمبيوتر */
+  .shadow-desktop {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  }
+
+  /* تحسين الحدود لأجهزة الكمبيوتر */
+  .border-desktop {
+    border-width: 1px;
+  }
+
+  /* تحسين الحالة النشطة لأجهزة الكمبيوتر */
+  .active-desktop {
+    background-color: #dbeafe;
+  }
+
+  /* تحسين الحالة المعطلة لأجهزة الكمبيوتر */
+  .disabled-desktop {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* تحسين التحميل لأجهزة الكمبيوتر */
+  .loading-desktop {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    background-color: #e5e7eb;
+    border-radius: 0.5rem;
+  }
+
+  /* تحسين الأخطاء لأجهزة الكمبيوتر */
+  .error-desktop {
+    color: #dc2626;
+    background-color: #fef2f2;
+    border-color: #fecaca;
+  }
+
+  /* تحسين النجاح لأجهزة الكمبيوتر */
+  .success-desktop {
+    color: #16a34a;
+    background-color: #f0fdf4;
+    border-color: #bbf7d0;
+  }
+
+  /* تحسين التحذيرات لأجهزة الكمبيوتر */
+  .warning-desktop {
+    color: #ca8a04;
+    background-color: #fefce8;
+    border-color: #fef08a;
+  }
+
+  /* تحسين المعلومات لأجهزة الكمبيوتر */
+  .info-desktop {
+    color: #2563eb;
+    background-color: #eff6ff;
+    border-color: #bfdbfe;
+  }
 }

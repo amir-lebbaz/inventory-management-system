@@ -1,29 +1,51 @@
+import { supabase } from './supabase'
+import { addActivityNotification } from "./communication"
+
+// تهيئة النظام
+export const initializeSystem = () => {
+  try {
+    console.log('تهيئة النظام...')
+    
+    // التحقق من اتصال Supabase
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (error) {
+        console.error('خطأ في الاتصال بـ Supabase:', error)
+      } else {
+        console.log('تم الاتصال بـ Supabase بنجاح')
+      }
+    })
+
+    console.log('تم تهيئة النظام بنجاح')
+  } catch (error) {
+    console.error('خطأ في تهيئة النظام:', error)
+  }
+}
+
 // نظام مصادقة محسن مع بيانات إضافية
 export const users = {
   // الممرات - 10 ممرات
-  ممر1: { password: "123", role: "worker", department: "ممر1", name: "عامل ممر 1", avatar: "👨‍💼" },
-  ممر2: { password: "456", role: "worker", department: "ممر2", name: "عامل ممر 2", avatar: "👩‍💼" },
-  ممر3: { password: "789", role: "worker", department: "ممر3", name: "عامل ممر 3", avatar: "👨‍💼" },
-  ممر4: { password: "321", role: "worker", department: "ممر4", name: "عامل ممر 4", avatar: "👩‍💼" },
-  ممر5: { password: "654", role: "worker", department: "ممر5", name: "عامل ممر 5", avatar: "👨‍💼" },
-  ممر6: { password: "987", role: "worker", department: "ممر6", name: "عامل ممر 6", avatar: "👩‍💼" },
-  ممر7: { password: "147", role: "worker", department: "ممر7", name: "عامل ممر 7", avatar: "👨‍💼" },
-  ممر8: { password: "258", role: "worker", department: "ممر8", name: "عامل ممر 8", avatar: "👩‍💼" },
-  ممر9: { password: "369", role: "worker", department: "ممر9", name: "عامل ممر 9", avatar: "👨‍💼" },
-  ممر10: { password: "741", role: "worker", department: "ممر10", name: "عامل ممر 10", avatar: "👩‍💼" },
+  ممر1: { password: "311", role: "worker", name: "ممر 1", avatar: "👨‍💼" },
+  ممر2: { password: "342", role: "worker", name: "ممر 2", avatar: "👩‍💼" },
+  ممر3: { password: "353", role: "worker", name: "ممر 3", avatar: "👨‍💼" },
+  ممر4: { password: "364", role: "worker", name: "ممر 4", avatar: "👩‍💼" },
+  ممر5: { password: "375", role: "worker", name: "ممر 5", avatar: "👨‍💼" },
+  ممر6: { password: "386", role: "worker", name: "ممر 6", avatar: "👩‍💼" },
+  ممر7: { password: "397", role: "worker", name: "ممر 7", avatar: "👨‍💼" },
+  ممر8: { password: "408", role: "worker", name: "ممر 8", avatar: "👩‍💼" },
+  ممر9: { password: "419", role: "worker", name: "ممر 9", avatar: "👨‍💼" },
+  ممر10: { password: "420", role: "worker", name: "ممر 10", avatar: "👩‍💼" },
 
   // الإدارة
-  المخزن: { password: "852", role: "warehouse", department: "المخزن", name: "أمين المخزن", avatar: "📦" },
-  hr: { password: "963", role: "hr", department: "الموارد البشرية", name: "مدير الموارد البشرية", avatar: "👔" },
+  المخزن: { password: "932", role: "warehouse", name: "مدير المخزن", avatar: "📦" },
+  hr: { password: "237", role: "hr", name: "مسؤول الموارد البشرية", avatar: "👔" },
 }
 
 export interface User {
   username: string
-  password: string
   role: string
-  department: string
   name: string
   avatar: string
+  loginTime?: string
 }
 
 export const authenticateUser = (username: string, password: string): User | null => {
@@ -31,30 +53,68 @@ export const authenticateUser = (username: string, password: string): User | nul
   if (user && user.password === password) {
     return {
       username,
-      ...user,
+      role: user.role,
+      name: user.name,
+      avatar: user.avatar,
     }
   }
   return null
-}
-
-export const getCurrentUser = (): User | null => {
-  if (typeof window === "undefined") return null
-
-  const userData = localStorage.getItem("currentUser")
-  return userData ? JSON.parse(userData) : null
 }
 
 export const setCurrentUser = (user: User) => {
   localStorage.setItem("currentUser", JSON.stringify(user))
 }
 
-export const logout = () => {
-  localStorage.removeItem("currentUser")
+export const getCurrentUser = (): User | null => {
+  try {
+    const userStr = localStorage.getItem("currentUser")
+    return userStr ? JSON.parse(userStr) : null
+  } catch {
+    return null
+  }
 }
 
-// وظائف إدارة البيانات المحسنة
+export const logout = () => {
+  try {
+    const currentUser = getCurrentUser()
+    if (currentUser) {
+      // إضافة إشعار تسجيل الخروج
+      addActivityNotification(currentUser.username, "logout", `تم تسجيل الخروج في ${new Date().toLocaleString("ar-SA")}`)
+    }
+    
+    localStorage.removeItem("currentUser")
+  } catch (error) {
+    console.error("خطأ في تسجيل الخروج:", error)
+  }
+}
+
+export const saveExpiringItem = (item: {
+  name: string
+  expiry_date: string
+  location: string
+  notes: string
+}) => {
+  const expiringItems = JSON.parse(localStorage.getItem("expiring_items") || "[]")
+  const newItem = {
+    id: Date.now().toString(),
+    ...item,
+    created_at: new Date().toISOString(),
+  }
+  expiringItems.push(newItem)
+  localStorage.setItem("expiring_items", JSON.stringify(expiringItems))
+  return newItem
+}
+
+export const getExpiringItems = () => {
+  return JSON.parse(localStorage.getItem("expiring_items") || "[]")
+}
+
+export const getInventoryItems = () => {
+  return JSON.parse(localStorage.getItem("inventory_items") || "[]")
+}
+
 export const saveInventoryItem = (item: any) => {
-  const inventory = JSON.parse(localStorage.getItem("warehouse_inventory") || "[]")
+  const inventory = JSON.parse(localStorage.getItem("inventory_items") || "[]")
   const existingIndex = inventory.findIndex((i: any) => i.name === item.name)
 
   if (existingIndex >= 0) {
@@ -63,47 +123,8 @@ export const saveInventoryItem = (item: any) => {
     inventory.push({ ...item, id: Date.now().toString(), created_at: new Date().toISOString() })
   }
 
-  localStorage.setItem("warehouse_inventory", JSON.stringify(inventory))
-}
-
-export const getInventoryItems = () => {
-  return JSON.parse(localStorage.getItem("warehouse_inventory") || "[]")
-}
-
-export const saveExpiringItem = (item: any) => {
-  const expiringItems = JSON.parse(localStorage.getItem("expiring_items") || "[]")
-  expiringItems.push({ ...item, id: Date.now().toString(), created_at: new Date().toISOString() })
-  localStorage.setItem("expiring_items", JSON.stringify(expiringItems))
-}
-
-export const getExpiringItems = () => {
-  return JSON.parse(localStorage.getItem("expiring_items") || "[]")
-}
-
-/* ------------------------------------------------------------------ */
-/* 🌟 NEW HELPERS – system bootstrap & easy login                     */
-/* ------------------------------------------------------------------ */
-
-/**
- * Boot-strap localStorage with the required keys if they don’t exist yet.
- * – Creates empty arrays for requests / inventory / expiring items
- * – Saves a timestamp for lastCleanup so the data-cleanup util can run
- */
-export function initializeSystem() {
-  if (typeof window === "undefined") return
-
-  const defaults: Record<string, any> = {
-    all_requests: [],
-    warehouse_inventory: [],
-    expiring_items: [],
-    lastCleanup: new Date().toISOString(),
-  }
-
-  Object.entries(defaults).forEach(([key, value]) => {
-    if (localStorage.getItem(key) === null) {
-      localStorage.setItem(key, JSON.stringify(value))
-    }
-  })
+  localStorage.setItem("inventory_items", JSON.stringify(inventory))
+  return item
 }
 
 /**
@@ -111,23 +132,83 @@ export function initializeSystem() {
  * Validates the credentials, saves the user in localStorage, and returns it.
  * Returns null if auth fails.
  */
-export function login(username: string, password: string, department?: string): User | null {
-  const user = authenticateUser(username, password)
+export function login(username: string, password: string): User | null {
+  try {
+    // التحقق من المستخدمين
+    const users = [
+      // الممرات
+      { username: "ممر1", password: "311", role: "worker" },
+      { username: "ممر2", password: "342", role: "worker" },
+      { username: "ممر3", password: "353", role: "worker" },
+      { username: "ممر4", password: "364", role: "worker" },
+      { username: "ممر5", password: "375", role: "worker" },
+      { username: "ممر6", password: "386", role: "worker" },
+      { username: "ممر7", password: "397", role: "worker" },
+      { username: "ممر8", password: "408", role: "worker" },
+      { username: "ممر9", password: "419", role: "worker" },
+      { username: "ممر10", password: "420", role: "worker" },
+      // المخزن
+      { username: "المخزن", password: "932", role: "warehouse" },
+      // الموارد البشرية
+      { username: "hr", password: "237", role: "hr" },
+    ]
 
-  // allow workers to log in using only their corridor name
-  if (!user && department) {
-    // department-based auth fallback
-    const deptUser = authenticateUser(username, password) // reuse normal validation
-    if (deptUser && deptUser.department === department) {
-      setCurrentUser(deptUser)
-      return deptUser
+    const user = users.find((u) => u.username === username && u.password === password)
+
+    if (user) {
+      const userData: User = {
+        username: user.username,
+        role: user.role,
+        name: user.username,
+        avatar: user.role === "worker" ? "👨‍💼" : user.role === "warehouse" ? "📦" : "👔",
+        loginTime: new Date().toISOString(),
+      }
+
+      // حفظ المستخدم الحالي
+      localStorage.setItem("currentUser", JSON.stringify(userData))
+      
+      // إضافة إشعار تسجيل الدخول
+      addActivityNotification(user.username, "login", `تم تسجيل الدخول بنجاح في ${new Date().toLocaleString("ar-SA")}`)
+      
+      return userData
     }
+
+    return null
+  } catch (error) {
+    console.error("خطأ في تسجيل الدخول:", error)
     return null
   }
+}
 
-  if (user) {
+export const signInWithSupabase = async (email: string, password: string) => {
+  try {
+    // استخدام النظام المحلي بدلاً من Supabase
+    const user = authenticateUser(email, password)
+    if (!user) return { user: null, error: 'Invalid credentials' }
+
     setCurrentUser(user)
-    return user
+    return { user, error: null }
+  } catch (error) {
+    console.error('خطأ في تسجيل الدخول:', error)
+    return { user: null, error }
   }
-  return null
+}
+
+export const signOutWithSupabase = async () => {
+  try {
+    logout()
+    return { error: null }
+  } catch (error) {
+    console.error('خطأ في تسجيل الخروج:', error)
+    return { error }
+  }
+}
+
+export const getCurrentUserFromSupabase = async () => {
+  try {
+    return getCurrentUser()
+  } catch (error) {
+    console.error('خطأ في جلب المستخدم:', error)
+    return null
+  }
 }

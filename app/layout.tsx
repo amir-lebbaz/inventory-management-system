@@ -1,14 +1,14 @@
-import type React from "react"
-import "./globals.css"
-import type { Metadata } from "next/metadata"
+import type { Metadata } from "next"
 import { Inter } from "next/font/google"
+import "./globals.css"
+import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "نظام إدارة الطلبات والمخزون",
-  description: "نظام شامل لإدارة طلبات العمال والمخزون والموارد البشرية",
-    generator: 'v0.dev'
+  title: "نظام إدارة المخزون",
+  description: "نظام متكامل لإدارة المخزون والطلبات",
 }
 
 export default function RootLayout({
@@ -17,8 +17,18 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="ar" dir="rtl">
-      <body className={inter.className}>{children}</body>
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
+      <body className={inter.className}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem={false}
+          disableTransitionOnChange
+        >
+          {children}
+          <Toaster />
+        </ThemeProvider>
+      </body>
     </html>
   )
 }
